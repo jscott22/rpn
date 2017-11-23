@@ -5,14 +5,26 @@ defmodule Rpn do
 
   def loop(stack) do
     receive do
-      :not_gonna_happen ->
-        :nosir_i_dont_like_it
+      {pid, :peek} ->
+        send(pid, stack)
+        loop(stack)
+      {pid, {:push, :+}} ->
+        Enum.sum(stack)
+        |> loop()
+      {pid, {:push, val}} ->
+        loop([val | stack])
     end
   end
 
   def peek(pid) do
+    send(pid, {self(), :peek})
+    receive do
+      stack ->
+        stack
+    end
   end
 
   def push(pid, val) do
+    send(pid, {self(), {:push, val}})
   end
 end
