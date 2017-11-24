@@ -5,26 +5,32 @@ defmodule Rpn do
 
   def loop(stack) do
     receive do
-      {pid, :peek} ->
-        send(pid, stack)
+      {from, ref, :peek} ->
+        send(from, {ref, stack})
         loop(stack)
-      {pid, {:push, :+}} ->
-        Enum.sum(stack)
-        |> loop()
-      {pid, {:push, val}} ->
+      {:push, :+} ->
+        [second | [first | rest]] = stack
+        loop([first + second | rest])
+      {:push, :-} ->
+        [second | [first | rest]] = stack
+        loop([first - second | rest])
+      {:push, :x} ->
+        [second | [first | rest]] = stack
+        loop([first * second | rest])
+      {:push, val} ->
         loop([val | stack])
     end
   end
-
+  
   def peek(pid) do
-    send(pid, {self(), :peek})
+    ref = make_ref()
+    send(pid, {self(), ref, :peek})
     receive do
-      stack ->
-        stack
+      {^ref, stack} -> stack
     end
   end
 
   def push(pid, val) do
-    send(pid, {self(), {:push, val}})
+    send(pid, {:push, val})
   end
 end
